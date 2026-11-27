@@ -1,0 +1,9 @@
+plugins { id 'com.android.application' version '8.9.2' }
+android {
+ namespace 'com.pringlestars.livesubtitle'
+ compileSdk 35
+ defaultConfig { applicationId 'com.pringlestars.livesubtitle'; minSdk 29; targetSdk 35; versionCode (System.getenv('BUILD_NUMBER') ?: '1').toInteger(); versionName "1.0.${versionCode}" }
+ signingConfigs { release { if (System.getenv('KEYSTORE_PASSWORD')) { storeFile file('../release.jks'); storePassword System.getenv('KEYSTORE_PASSWORD'); keyAlias 'release'; keyPassword System.getenv('KEYSTORE_PASSWORD') } } }
+ buildTypes { release { signingConfig signingConfigs.release; minifyEnabled false } }
+}
+dependencies { implementation 'com.google.mlkit:text-recognition:16.0.1'; implementation 'com.google.mlkit:translate:17.0.3' }
