@@ -1,0 +1,37 @@
+name: Signed APK
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    env:
+      BUILD_NUMBER: ${{ github.run_number }}
+      KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+      KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.11.1'
+      - run: sdkmanager 'platforms;android-35' 'build-tools;35.0.0'
+      - name: Compile and validate
+        run: gradle :app:assembleDebug
+      - name: Restore fixed signing key
+        run: |
+          test -n "$KEYSTORE_BASE64" && test -n "$KEYSTORE_PASSWORD" || { echo "::error::Configure signing secrets before publishing"; exit 1; }
+          printf '%s' "$KEYSTORE_BASE64" | base64 -d > release.jks
+      - run: gradle :app:assembleRelease
+      - run: |
+          cp app/build/outputs/apk/release/app-release.apk LiveSubtitleTranslator.apk
+          "$ANDROID_HOME/build-tools/35.0.0/apksigner" verify LiveSubtitleTranslator.apk
+      - env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release create "v1.0.$BUILD_NUMBER" LiveSubtitleTranslator.apk --title "v1.0.$BUILD_NUMBER" --generate-notes --latest
