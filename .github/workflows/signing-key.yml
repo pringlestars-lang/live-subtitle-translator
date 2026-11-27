@@ -1,0 +1,27 @@
+name: Generate signing key
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    env:
+      PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+    steps:
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Generate encrypted keystore
+        run: |
+          test -n "$PASSWORD"
+          keytool -genkeypair -keystore release.jks -storetype JKS -storepass "$PASSWORD" -keypass "$PASSWORD" -alias release -keyalg RSA -keysize 3072 -validity 10000 -dname "CN=Live Subtitle Translator"
+          base64 -w 0 release.jks > KEYSTORE_BASE64.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: signing-key-private-backup
+          path: |
+            release.jks
+            KEYSTORE_BASE64.txt
+          retention-days: 1
