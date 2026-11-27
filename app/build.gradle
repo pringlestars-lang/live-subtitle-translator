@@ -1,9 +1,26 @@
 plugins { id 'com.android.application' version '8.9.2' }
+def buildNumber = (System.getenv('BUILD_NUMBER') ?: '1').toInteger()
+def signingPassword = System.getenv('KEYSTORE_PASSWORD')
 android {
- namespace 'com.pringlestars.livesubtitle'
- compileSdk 35
- defaultConfig { applicationId 'com.pringlestars.livesubtitle'; minSdk 29; targetSdk 35; versionCode (System.getenv('BUILD_NUMBER') ?: '1').toInteger(); versionName "1.0.${versionCode}" }
- signingConfigs { release { if (System.getenv('KEYSTORE_PASSWORD')) { storeFile file('../release.jks'); storePassword System.getenv('KEYSTORE_PASSWORD'); keyAlias 'release'; keyPassword System.getenv('KEYSTORE_PASSWORD') } } }
- buildTypes { release { signingConfig signingConfigs.release; minifyEnabled false } }
+ namespace = 'com.pringlestars.livesubtitle'
+ compileSdk = 35
+ defaultConfig {
+  applicationId = 'com.pringlestars.livesubtitle'
+  minSdk = 29
+  targetSdk = 35
+  versionCode = buildNumber
+  versionName = "1.0.${buildNumber}".toString()
+ }
+ signingConfigs {
+  release {
+   if (signingPassword) {
+    storeFile = rootProject.file('release.jks')
+    storePassword = signingPassword
+    keyAlias = 'release'
+    keyPassword = signingPassword
+   }
+  }
+ }
+ buildTypes { release { signingConfig = signingConfigs.release; minifyEnabled = false } }
 }
 dependencies { implementation 'com.google.mlkit:text-recognition:16.0.1'; implementation 'com.google.mlkit:translate:17.0.3' }
