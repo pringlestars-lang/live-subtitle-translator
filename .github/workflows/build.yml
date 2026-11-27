@@ -21,8 +21,25 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.11.1'
-      - uses: android-actions/setup-android@v3
-      - run: sdkmanager 'platforms;android-35' 'build-tools;35.0.0'
+      - name: Install Android SDK directly
+        shell: bash
+        run: |
+          SDK="${ANDROID_HOME:-$HOME/android-sdk}"
+          mkdir -p "$SDK/cmdline-tools"
+          curl --fail --retry 3 -L https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip -o "$RUNNER_TEMP/android-tools.zip"
+          unzip -q "$RUNNER_TEMP/android-tools.zip" -d "$RUNNER_TEMP/android-tools"
+          mkdir -p "$SDK/cmdline-tools/pinned"
+          cp -a "$RUNNER_TEMP/android-tools/cmdline-tools/." "$SDK/cmdline-tools/pinned/"
+          export ANDROID_HOME="$SDK"
+          export ANDROID_SDK_ROOT="$SDK"
+          MANAGER="$SDK/cmdline-tools/pinned/bin/sdkmanager"
+          set +o pipefail
+          yes | "$MANAGER" --sdk_root="$SDK" --licenses
+          set -o pipefail
+          "$MANAGER" --sdk_root="$SDK" "platforms;android-35" "build-tools;35.0.0" "platform-tools"
+          echo "ANDROID_HOME=$SDK" >> "$GITHUB_ENV"
+          echo "ANDROID_SDK_ROOT=$SDK" >> "$GITHUB_ENV"
+          echo "$SDK/cmdline-tools/pinned/bin" >> "$GITHUB_PATH"
       - name: Compile and validate
         run: gradle :app:assembleDebug
       - name: Restore fixed signing key
